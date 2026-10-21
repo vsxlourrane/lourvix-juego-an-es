@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RH en Acción: El Misterio de Ana Carolina | KPS Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --coke-red: #E61A27;
+    --coke-dark: #0A0A0A;
+    --neon-cyan: #00F0FF;
+    --neon-green: #39FF14;
+    --neon-pink: #FF007F;
+    --text-main: #E0E0E0;
+    --text-muted: #888888;
+    --panel-bg: rgba(15, 15, 20, 0.85);
+    --yellow: #FFD93D;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  body {
+    background-color: var(--coke-dark);
+    background-image: 
+      linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    user-select: none;
+  }
+
+  /* Efeito Scanline global */
+  body::after {
+    content: " ";
+    display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 50; background-size: 100% 2px, 3px 100%; pointer-events: none;
+  }
+
+  /* ============ HUD SUPERIOR ============ */
+  .hud {
+    position: absolute; top: 0; left: 0; right: 0;
+    padding: 15px 30px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 100;
+    background: linear-gradient(to bottom, rgba(10,10,10,0.95), transparent);
+    font-family: 'Share Tech Mono', monospace; font-size: 14px;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+  }
+
+  .hud-left { display: flex; gap: 15px; align-items: center; }
+  .player-tag {
+    color: var(--neon-cyan); font-weight: 700;
+    border: 1px solid var(--neon-cyan); padding: 4px 10px; border-radius: 4px;
+    background: rgba(0, 240, 255, 0.1);
+  }
+  .kps-status { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); display: flex; align-items: center; gap: 8px; }
+  .kps-status::before { content: ''; width: 8px; height: 8px; background: var(--neon-cyan); border-radius: 50%; box-shadow: 0 0 10px var(--neon-cyan); animation: pulseKPS 2s infinite; }
+  @keyframes pulseKPS { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .hud-right { display: flex; align-items: center; gap: 15px; }
+  .score-text { color: var(--yellow); font-weight: 700; font-size: 16px; }
+  .progress-container { width: 150px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--neon-green); width: 0%; box-shadow: 0 0 10px var(--neon-green); transition: width 0.5s ease; }
+
+  /* ============ SCREENS ============ */
+  .screen {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 20px 20px; z-index: 10;
+    opacity: 0; transition: opacity 0.5s ease;
+  }
+  .screen.active { display: flex; opacity: 1; }
+
+  /* --- INTRO SCREEN --- */
+  #screen-intro { text-align: center; background: radial-gradient(circle at center, rgba(230,26,39,0.1) 0%, transparent 60%); }
+  
+  .intro-title {
+    font-family: 'Rajdhani', sans-serif; font-size: clamp(32px, 5vw, 56px);
+    color: #fff; text-transform: uppercase; letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(230,26,39,0.8); margin-bottom: 10px;
+  }
+  .intro-subtitle { font-family: 'Share Tech Mono', monospace; color: var(--neon-cyan); font-size: 16px; margin-bottom: 30px; letter-spacing: 1px; }
+  
+  /* Boneca de Cabelo Cacheado (SVG) */
+  .avatar-container {
+    width: 150px; height: 150px; margin: 0 auto 30px;
+    border-radius: 50%; border: 3px solid var(--neon-cyan);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.2);
+    background: #111; position: relative; overflow: hidden;
+    animation: floatAvatar 4s ease-in-out infinite;
+  }
+  @keyframes floatAvatar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  
+  .avatar-container svg { width: 100%; height: 100%; }
+
+  .intro-text {
+    max-width: 700px; font-size: 18px; line-height: 1.6; color: var(--text-muted);
+    margin-bottom: 40px; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 8px; border-left: 3px solid var(--coke-red);
+  }
+  .intro-text strong { color: var(--text-main); }
+
+  .btn-start {
+    background: var(--coke-red); color: #fff; border: none;
+    padding: 18px 50px; border-radius: 6px; font-family: 'Rajdhani', sans-serif;
+    font-size: 22px; font-weight: 700; letter-spacing: 2px; cursor: pointer;
+    box-shadow: 0 0 20px rgba(230,26,39,0.5); transition: all 0.3s;
+  }
+  .btn-start:hover { background: #fff; color: var(--coke-red); transform: scale(1.05); box-shadow: 0 0 40px rgba(230,26,39,0.8); }
+
+  /* --- MAP SCREEN --- */
+  #screen-map { background: rgba(10,10,10,0.8); }
+  
+  .map-container {
+    width: 100%; max-width: 800px; height: 100%; display: flex; flex-direction: column; justify-content: center;
+    position: relative;
+  }
+
+  .map-title { text-align: center; font-family: 'Rajdhani', sans-serif; font-size: 32px; color: #fff; margin-bottom: 30px; letter-spacing: 2px; }
+  
+  .map-nodes-wrapper {
+    display: flex; flex-direction: column; gap: 20px; align-items: center; position: relative;
+  }
+
+  /* Linha conectora */
+  .map-nodes-wrapper::before {
+    content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 4px;
+    background: rgba(255,255,255,0.1); transform: translateX(-50%); z-index: 0;
+  }
+
+  .map-node {
+    position: relative; z-index: 1; display: flex; align-items: center; gap: 20px;
+    background: var(--panel-bg); border: 2px solid rgba(255,255,255,0.1);
+    padding: 15px 25px; border-radius: 12px; width: 100%; max-width: 450px;
+    transition: all 0.3s; cursor: pointer;
+  }
+  
+  .map-node:hover.unlocked { border-color: var(--neon-cyan); box-shadow: 0 0 20px rgba(0,240,255,0.2); transform: scale(1.02); }
+  
+  .node-icon {
+    width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; background: #222; border: 2px solid #444; flex-shrink: 0;
+  }
+  .node-info { flex: 1; }
+  .node-title { font-family: 'Rajdhani', sans-serif; font-size: 20px; color: #fff; font-weight: 700; }
+  .node-desc { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  
+  /* Estados dos Nós */
+  .map-node.locked { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+  .map-node.unlocked { border-color: var(--neon-cyan); }
+  .map-node.unlocked .node-icon { border-color: var(--neon-cyan); color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,240,255,0.4); }
+  .map-node.completed { border-color: var(--neon-green); background: rgba(57,255,20,0.05); }
+  .map-node.completed .node-icon { border-color: var(--neon-green); color: var(--neon-green); }
+  .map-node.completed .node-icon::after { content: '✓'; }
+  .map-node.completed .node-icon span { display: none; }
+
+  /* --- GAME SCREEN --- */
+  #screen-game { padding: 80px 20px 20px; }
+  .terminal {
+    width: 100%; max-width: 900px; background: var(--panel-bg);
+    border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 8px;
+    box-shadow: 0 0 40px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+    padding: 40px; position: relative; backdrop-filter: blur(10px);
+  }
+
+  .phase-info { float: right; font-family: 'Share Tech Mono', monospace; color: var(--text-muted); font-size: 12px; margin-top: 5px; }
+  .phase-tag { display: inline-block; padding: 4px 12px; background: rgba(230, 26, 39, 0.2); color: var(--coke-red); border: 1px solid var(--coke-red); border-radius: 4px; font-family: 'Share Tech Mono', monospace; font-size: 12px; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+
+  .narrative { font-family: 'Rajdhani', sans-serif; font-size: 20px; line-height: 1.5; margin-bottom: 30px; min-height: 80px; }
+  .narrative strong { color: var(--neon-cyan); }
+  .narrative .highlight { color: var(--coke-red); font-style: italic; }
+
+  .interaction-area { display: none; animation: fadeIn 0.4s ease forwards; }
+  .interaction-area.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .question-box { background: rgba(0, 0, 0, 0.4); border-left: 3px solid var(--neon-cyan); padding: 20px; margin-bottom: 20px; font-size: 18px; font-weight: 600; }
+
+  .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .options-grid.two-cols { grid-template-columns: 1fr 1fr; }
+
+  .btn-option {
+    background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px 20px; border-radius: 6px; color: var(--text-main);
+    font-family: 'Rajdhani', sans-serif; font-size: 16px; font-weight: 500;
+    text-align: left; cursor: pointer; transition: all 0.2s ease;
+    display: flex; align-items: center; gap: 12px; position: relative;
+  }
+
+  .btn-option:hover:not(:disabled) { background: rgba(0, 240, 255, 0.08); border-color: var(--neon-cyan); transform: translateX(5px); }
+  .btn-option .key { font-family: 'Share Tech Mono', monospace; color: var(--neon-cyan); background: rgba(0, 240, 255, 0.1); padding: 4px 8px; border-radius: 4px; }
+
+  .btn-option.correct { background: rgba(57, 255, 20, 0.15); border-color: var(--neon-green); color: var(--neon-green); box-shadow: 0 0 15px rgba(57, 255, 20, 0.2); }
+  .btn-option.wrong { background: rgba(230, 26, 39, 0.15); border-color: var(--coke-red); color: var(--coke-red); animation: shake 0.3s; }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  .write-input-group { display: flex; gap: 10px; margin-top: 15px; }
+  .write-input { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid var(--neon-cyan); padding: 15px; color: #fff; font-family: 'Share Tech Mono', monospace; font-size: 16px; border-radius: 6px; outline: none; }
+  .write-input:focus { box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
+  .btn-submit { background: var(--neon-cyan); color: #000; border: none; padding: 0 25px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.2s; }
+  .btn-submit:hover { background: #fff; box-shadow: 0 0 20px var(--neon-cyan); }
+
+  .feedback-box { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; font-family: 'Share Tech Mono', monospace; font-size: 14px; }
+  .feedback-box.show { display: block; animation: fadeIn 0.3s; }
+  .feedback-box.ok { background: rgba(57,255,20,0.1); border: 1px solid var(--neon-green); color: var(--neon-green); }
+  .feedback-box.err { background: rgba(230,26,39,0.1); border: 1px solid var(--coke-red); color: var(--coke-red); }
+
+  /* ============ OVERLAYS / MODAIS ============ */
+  .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+  .overlay.active { display: flex; }
+
+  .modal { background: linear-gradient(145deg, #111, #1a1a1a); border: 1px solid var(--neon-cyan); border-radius: 12px; padding: 40px; text-align: center; max-width: 500px; width: 90%; box-shadow: 0 0 50px rgba(0, 240, 255, 0.2); animation: modalPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  @keyframes modalPop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  .modal-icon { font-size: 60px; margin-bottom: 20px; }
+  .modal h2 { font-family: 'Rajdhani', sans-serif; font-size: 32px; margin-bottom: 15px; letter-spacing: 2px; }
+  .modal p { color: var(--text-muted); font-size: 16px; margin-bottom: 25px; line-height: 1.5; }
+  
+  .modal.success { border-color: var(--neon-green); }
+  .modal.success h2, .modal.success .modal-icon { color: var(--neon-green); text-shadow: 0 0 20px var(--neon-green); }
+  .modal.fail { border-color: var(--coke-red); }
+  .modal.fail h2, .modal.fail .modal-icon { color: var(--coke-red); text-shadow: 0 0 20px var(--coke-red); }
+
+  .btn-next { background: var(--neon-green); color: #000; border: none; padding: 15px 40px; border-radius: 6px; font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .btn-next:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 5px 20px rgba(57,255,20,0.4); }
+  .btn-retry { background: var(--coke-red); color: #fff; }
+  .btn-retry:hover { box-shadow: 0 5px 20px rgba(230,26,39,0.4); }
+
+  @media (max-width: 768px) {
+    .terminal { padding: 25px; }
+    .options-grid.two-cols { grid-template-columns: 1fr; }
+    .hud { flex-direction: column; gap: 10px; padding: 15px; }
+    .hud-right { width: 100%; justify-content: space-between; }
+    .phase-tag { font-size: 10px; }
+    .narrative { font-size: 18px; }
+    .map-node { flex-direction: column; text-align: center; padding: 15px; gap: 10px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- HUD GLOBAL -->
+  <header class="hud">
+    <div class="hud-left">
+      <div class="player-tag">👩🏽‍🦱 ANA CAROLINA</div>
+      <div class="kps-status">KPS CONNECTED</div>
+    </div>
+    <div class="hud-center" id="game-time">SISTEMA EN LÍNEA</div>
+    <div class="hud-right">
+      <span class="score-text" id="score-display">SCORE: 0/100</span>
+      <div class="progress-container">
+        <div class="progress-bar" id="progress-bar"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- TELA 1: INTRO -->
+  <div class="screen active" id="screen-intro">
+    <div class="intro-subtitle">// KPS SYSTEM ALERT //</div>
+    <h1 class="intro-title">El Misterio de Ana Carolina</h1>
+    
+    <div class="avatar-container">
+      <!-- SVG Boneca de Cabelo Cacheado -->
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Fundo -->
+        <circle cx="50" cy="50" r="50" fill="#1a1a1a"/>
+        <!-- Cabelo Cacheado (Círculos sobrepostos) -->
+        <g fill="#3E2723">
+          <circle cx="30" cy="40" r="15"/>
+          <circle cx="70" cy="40" r="15"/>
+          <circle cx="50" cy="25" r="18"/>
+          <circle cx="25" cy="60" r="12"/>
+          <circle cx="75" cy="60" r="12"/>
+          <circle cx="40" cy="30" r="14"/>
+          <circle cx="60" cy="30" r="14"/>
+        </g>
+        <!-- Rosto -->
+        <rect x="35" y="40" width="30" height="35" rx="12" fill="#D2A679"/>
+        <!-- Olhos -->
+        <circle cx="43" cy="52" r="2.5" fill="#0A0A0A"/>
+        <circle cx="57" cy="52" r="2.5" fill="#0A0A0A"/>
+        <!-- Boca -->
+        <path d="M 45 62 Q 50 66 55 62" stroke="#0A0A0A" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- Blazer Executivo -->
+        <path d="M 20 90 L 35 70 L 65 70 L 80 90 Z" fill="#E61A27"/>
+        <path d="M 50 70 L 50 90" stroke="#0A0A0A" stroke-width="2"/>
+        <!-- Crachá KOF -->
+        <rect x="55" y="75" width="8" height="10" fill="#FFF" rx="1"/>
+        <rect x="56" y="77" width="6" height="2" fill="#E61A27"/>
+        <rect x="56" y="81" width="6" height="2" fill="#0A0A0A"/>
+      </svg>
+    </div>
+
+    <div class="intro-text">
+      Bem-vinda ao CDMX. Eu sou <strong>Ana Carolina</strong>.<br><br>
+      O sistema KPS da Coca-Cola FEMSA foi hackeado. O <em>Saboteador Anônimo</em> alterou os manuais de RH e corrompeu os dados da planta. Se não corrigirmos as discrepâncias linguísticas e operacionais antes do final da semana, a auditoria internacional cancelará as operações.<br><br>
+      Prepare-se para mergulhar nos verbos e mexicanismos do ambiente corporativo mexicano. Desvende as pistas, passe pelos obstáculos e descubra a identidade do Saboteador.
+    </div>
+    
+    <button class="btn-start" onclick="showScreen('map')">INICIAR MISIÓN 🚀</button>
+  </div>
+
+  <!-- TELA 2: MAPA -->
+  <div class="screen" id="screen-map">
+    <h2 class="map-title">RUTA DE INVESTIGACIÓN</h2>
+    <div class="map-container">
+      <div class="map-nodes-wrapper" id="map-nodes">
+        <!-- Nós do mapa serão gerados via JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA 3: JOGO -->
+  <div class="screen" id="screen-game">
+    <div class="terminal">
+      <div class="phase-info" id="phase-info">Progresso: 0/0 pts</div>
+      <div class="phase-tag" id="phase-tag">FASE 1</div>
+      
+      <div class="narrative" id="narrative"></div>
+
+      <div class="interaction-area" id="interaction-area">
+        <div class="question-box" id="question-box"></div>
+        <div class="options-grid" id="options-grid"></div>
+        
+        <div class="write-input-group" id="write-group" style="display:none;">
+          <input type="text" class="write-input" id="write-input" placeholder="Digite sua resposta..." autocomplete="off">
+          <button class="btn-submit" onclick="submitWrite()">ENVIAR</button>
+        </div>
+        
+        <div class="feedback-box" id="feedback-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE FIM DE FASE -->
+  <div class="overlay" id="phase-overlay">
+    <div class="modal" id="phase-modal">
+      <div class="modal-icon" id="modal-icon">✔</div>
+      <h2 id="modal-title">FASE COMPLETA</h2>
+      <p id="modal-desc">Você atingiu a pontuação necessária.</p>
+      <button class="btn-next" id="modal-btn" onclick="advancePhase()">VOLTAR AO MAPA →</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE FIM DE JOGO -->
+  <div class="overlay" id="end-overlay">
+    <div class="modal success">
+      <div class="modal-icon">🏆</div>
+      <h2>MISSÃO CUMPRIDA</h2>
+      <p>Parabéns, Ana Carolina! Você dominou o espanhol corporativo mexicano, desarmou o Saboteador e garantiu a aprovação da auditoria da Coca-Cola FEMSA.</p>
+      <button class="btn-next" onclick="location.reload()">REINICIAR SISTEMA ↻</button>
+    </div>
+  </div>
+
+<script>
+/* ==========================================
+   DADOS DAS FASES
+   ========================================== */
+const gameData = [
+  {
+    id: 1, title: "FASE 1: DÍAS Y HORAS", minPoints: 8, maxPoints: 16,
+    desc: "Alinhe os dias da semana e os horários.",
+    narrative: "Bem-vinda ao CDMX. O sistema KPS detectou anomalias no cronograma da planta. Precisamos alinhar os dias e horários antes da reunião com a diretoria.",
+    challenges: [
+      { type: "quiz", q: "Como se diz 'Segunda-feira' em espanhol?", opts: ["El lunes", "El martes", "La lunes"], ans: 0 },
+      { type: "true-false", q: "Todos os dias da semana em espanhol são masculinos.", ans: true },
+      { type: "write", q: "Escreva o horário '15:00': 'Son las...'", ans: "son las tres" },
+      { type: "situation", q: "Você tem uma reunião às 9:00. Como você confirma?", opts: ["Nos vemos a las nueve.", "Nos vemos en el nueve.", "Nos vemos por la nueve."], ans: 0 }
+    ]
+  },
+  {
+    id: 2, title: "FASE 2: MEXICANISMOS", minPoints: 20, maxPoints: 24,
+    desc: "Decodifique as gírias da equipe local.",
+    narrative: "A equipe local está usando gírias. O Saboteador alterou o manual de cultura. Identifique os verbos reais usados pelos gestores.",
+    challenges: [
+      { type: "quiz", q: "O que significa 'Chambear'?", opts: ["Demitir", "Trabalhar duro", "Assinar contrato"], ans: 1 },
+      { type: "true-false", q: "'Jalar' significa 'pegar junto' ou trabalhar em equipe.", ans: true },
+      { type: "situation", q: "Qual verbo descreve a ação do RH de acolher bem um novo talento?", opts: ["Rifarse", "Apapachar", "Camellar"], ans: 1 },
+      { type: "quiz", q: "Complete: 'El equipo se la _____ con la entrega'.", opts: ["Jaló", "Rifó", "Apapachó"], ans: 1 },
+      { type: "write", q: "Qual verbo significa 'trabalhar de forma árdua e incansável'?", ans: "camellar" },
+      { type: "true-false", q: "'Acurrucar' é usado para demitir um funcionário.", ans: false }
+    ]
+  },
+  {
+    id: 3, title: "FASE 3: RH TÉCNICO", minPoints: 20, maxPoints: 24,
+    desc: "Alinhe os 4 pilares de RH da Coca-Cola.",
+    narrative: "Você acessou o painel de RH. Os quatro pilares estão desalinhados. Corrija os relatórios usando os verbos técnicos exatos.",
+    challenges: [
+      { type: "quiz", q: "Qual verbo substitui 'entrenar' para capacitação profissional?", opts: ["Capacitar", "Ensinar", "Instruir"], ans: 0 },
+      { type: "write", q: "Qual verbo significa 'lançar ou implementar uma nova estratégia'?", ans: "desplegar" },
+      { type: "situation", q: "Você precisa fortalecer as auditorias internas. Qual verbo usar?", opts: ["Habilitar", "Fomentar", "Robustecer"], ans: 2 },
+      { type: "true-false", q: "'Habilitar' significa preparar os funcionários tecnologicamente para o KPS.", ans: true },
+      { type: "quiz", q: "Incentivar a diversidade na comunicação interna é o verbo:", opts: ["Reclutar", "Fomentar", "Seleccionar"], ans: 1 },
+      { type: "true-false", q: "'Reclutar' refere-se à atração de pessoal.", ans: true }
+    ]
+  },
+  {
+    id: 4, title: "FASE 4: GESTÃO DIÁRIA", minPoints: 16, maxPoints: 16,
+    desc: "Acompanhe os KPIs e agende as entregas.",
+    narrative: "Últimos relatórios de KPIs precisam ser fechados. A meta é converter ideias abstratas em planos de ação e acompanhar o desempenho.",
+    challenges: [
+      { type: "situation", q: "Como transformar uma ideia em plano de ação?", opts: ["Aterrizar", "Monitorear", "Agendar"], ans: 0 },
+      { type: "write", q: "Complete: 'Dar ___________' (Acompanhar de perto uma tarefa).", ans: "seguimiento" },
+      { type: "quiz", q: "Qual verbo significa acompanhar as metas através dos KPIs?", opts: ["Agendar", "Monitorear", "Desplegar"], ans: 1 },
+      { type: "true-false", q: "'Calendarizar' significa deletar o calendário de reuniões.", ans: false }
+    ]
+  },
+  {
+    id: 5, title: "FASE 5: ETAPA SURPRESA", minPoints: 20, maxPoints: 20,
+    desc: "O jargão final do Saboteador.",
+    narrative: "ALERTA VERMELHO. O Saboteador deixou expressões idiomáticas cruciais para confundir a liderança. Decodifique o jargão final para desativar o vírus.",
+    challenges: [
+      { type: "situation", q: "Um colaborador está sobrecarregado. Como ele diz isso?", opts: ["Estoy hasta las manitas", "Estoy en la camiseta", "Doy el avión"], ans: 0 },
+      { type: "true-false", q: "'Ponerse la camiseta' significa lealdade total à empresa.", ans: true },
+      { type: "quiz", q: "Quando alguém concorda apenas para evitar confronto, dizemos que:", opts: ["Se rifó", "Dio el avión", "Se puso la camiseta"], ans: 1 },
+      { type: "write", q: "Escreva a expressão que significa estar sobrecarregado: 'Estar hasta las...'", ans: "manitas" },
+      { type: "true-false", q: "A cultura mexicana prioriza o 'não' direto.", ans: false }
+    ]
+  }
+];
+
+/* ==========================================
+   ESTADO DO JOGO
+   ========================================== */
+let currentPhaseIndex = 0;
+let currentChallengeIndex = 0;
+let globalScore = 0;
+let phaseScore = 0;
+let canInteract = false;
+let maxUnlockedPhase = 1; // Fase 1 desbloqueada inicialmente
+let phaseStatus = [false, false, false, false, false]; // Status de conclusão
+
+const els = {
+  screens: document.querySelectorAll('.screen'),
+  mapNodes: document.getElementById('map-nodes'),
+  narrative: document.getElementById('narrative'),
+  phaseTag: document.getElementById('phase-tag'),
+  phaseInfo: document.getElementById('phase-info'),
+  interaction: document.getElementById('interaction-area'),
+  questionBox: document.getElementById('question-box'),
+  optionsGrid: document.getElementById('options-grid'),
+  writeGroup: document.getElementById('write-group'),
+  writeInput: document.getElementById('write-input'),
+  feedback: document.getElementById('feedback-box'),
+  scoreDisplay: document.getElementById('score-display'),
+  progressBar: document.getElementById('progress-bar'),
+  overlay: document.getElementById('phase-overlay'),
+  modal: document.getElementById('phase-modal'),
+  modalIcon: document.getElementById('modal-icon'),
+  modalTitle: document.getElementById('modal-title'),
+  modalDesc: document.getElementById('modal-desc'),
+  modalBtn: document.getElementById('modal-btn')
+};
+
+/* ==========================================
+   NAVEGAÇÃO DE TELAS
+   ========================================== */
+function showScreen(screenId) {
+  els.screens.forEach(s => s.classList.remove('active'));
+  document.getElementById(`screen-${screenId}`).classList.add('active');
+  
+  if (screenId === 'map') {
+    renderMap();
+  }
+}
+
+/* ==========================================
+   RENDERIZAR MAPA
+   ========================================== */
+function renderMap() {
+  els.mapNodes.innerHTML = '';
+  
+  gameData.forEach((phase, index) => {
+    const isUnlocked = (index + 1) <= maxUnlockedPhase;
+    const isCompleted = phaseStatus[index];
+    
+    const node = document.createElement('div');
+    node.className = `map-node ${isCompleted ? 'completed' : isUnlocked ? 'unlocked' : 'locked'}`;
+    node.onclick = () => {
+      if (!isUnlocked) return;
+      startPhase(index);
+    };
+
+    node.innerHTML = `
+      <div class="node-icon"><span>${index + 1}</span></div>
+      <div class="node-info">
+        <div class="node-title">${phase.title}</div>
+        <div class="node-desc">${phase.desc}</div>
+      </div>
+    `;
+    els.mapNodes.appendChild(node);
+  });
+}
+
+/* ==========================================
+   LÓGICA DE INÍCIO DE FASE
+   ========================================== */
+function startPhase(index) {
+  currentPhaseIndex = index;
+  showScreen('game');
+  loadPhase();
+}
+
+function loadPhase() {
+  const phase = gameData[currentPhaseIndex];
+  currentChallengeIndex = 0;
+  phaseScore = 0;
+  canInteract = false;
+  
+  els.phaseTag.textContent = phase.title;
+  updatePhaseInfo();
+  els.interaction.classList.remove('active');
+  els.feedback.classList.remove('show');
+  
+  typeWriter(phase.narrative, els.narrative, () => {
+    loadChallenge();
+  });
+}
+
+/* ==========================================
+   CARREGAR DESAFIOS
+   ========================================== */
+function loadChallenge() {
+  const phase = gameData[currentPhaseIndex];
+  const challenge = phase.challenges[currentChallengeIndex];
+  
+  els.feedback.classList.remove('show', 'ok', 'err');
+  els.optionsGrid.innerHTML = '';
+  els.writeGroup.style.display = 'none';
+  els.optionsGrid.classList.remove('two-cols');
+  
+  els.questionBox.textContent = challenge.q;
+  els.interaction.classList.add('active');
+  canInteract = true;
+
+  if (challenge.type === 'quiz' || challenge.type === 'situation') {
+    challenge.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'btn-option';
+      btn.innerHTML = `<span class="key">[${i + 1}]</span> ${opt}`;
+      btn.onclick = () => checkAnswer(i === challenge.ans, opt, challenge.opts[challenge.ans]);
+      els.optionsGrid.appendChild(btn);
+    });
+  } 
+  else if (challenge.type === 'true-false') {
+    els.optionsGrid.classList.add('two-cols');
+    const opts = ["VERDADEIRO", "FALSO"];
+    opts.forEach((opt, i) => {
+      const isTrue = i === 0;
+      const btn = document.createElement('button');
+      btn.className = 'btn-option';
+      btn.style.justifyContent = 'center';
+      btn.innerHTML = opt;
+      btn.onclick = () => checkAnswer(isTrue === challenge.ans, opt, challenge.ans ? "VERDADEIRO" : "FALSO");
+      els.optionsGrid.appendChild(btn);
+    });
+  }
+  else if (challenge.type === 'write') {
+    els.writeGroup.style.display = 'flex';
+    els.writeInput.value = '';
+    els.writeInput.focus();
+    els.writeInput.onkeydown = (e) => { if (e.key === 'Enter') submitWrite(); };
+  }
+}
+
+function submitWrite() {
+  if (!canInteract) return;
+  const challenge = gameData[currentPhaseIndex].challenges[currentChallengeIndex];
+  const val = els.writeInput.value.trim().toLowerCase();
+  
+  const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const isCorrect = normalize(val) === normalize(challenge.ans);
+  
+  checkAnswer(isCorrect, val, challenge.ans);
+}
+
+function checkAnswer(isCorrect, userAnswer, correctAnswer) {
+  if (!canInteract) return;
+  canInteract = false;
+
+  const btns = els.optionsGrid.querySelectorAll('.btn-option');
+  btns.forEach(b => b.style.pointerEvents = 'none');
+  els.writeInput.disabled = true;
+
+  if (isCorrect) {
+    phaseScore += 4;
+    globalScore += 4;
+    els.feedback.textContent = "✔ CORRETO! +4 PONTOS";
+    els.feedback.className = "feedback-box show ok";
+    
+    if (btns.length > 0) {
+      btns.forEach(b => {
+        if (b.textContent.includes(userAnswer) || b.textContent.includes(correctAnswer)) b.classList.add('correct');
+      });
+    }
+  } else {
+    els.feedback.textContent = `✖ INCORRETO. Resposta correta: "${correctAnswer}"`;
+    els.feedback.className = "feedback-box show err";
+    
+    if (btns.length > 0) {
+      btns.forEach(b => {
+        if (b.textContent.includes(userAnswer)) b.classList.add('wrong');
+        if (b.textContent.includes(correctAnswer)) b.classList.add('correct');
+      });
+    }
+  }
+
+  updateHUD();
+  updatePhaseInfo();
+
+  setTimeout(() => {
+    currentChallengeIndex++;
+    if (currentChallengeIndex < gameData[currentPhaseIndex].challenges.length) {
+      loadChallenge();
+    } else {
+      endPhase();
+    }
+  }, 2000);
+}
+
+/* ==========================================
+   FIM DA FASE
+   ========================================== */
+function endPhase() {
+  const phase = gameData[currentPhaseIndex];
+  const passed = phaseScore >= phase.minPoints;
+
+  els.overlay.classList.add('active');
+  
+  if (passed) {
+    phaseStatus[currentPhaseIndex] = true;
+    if (currentPhaseIndex + 1 === maxUnlockedPhase) {
+      maxUnlockedPhase++;
+    }
+
+    els.modal.className = 'modal success';
+    els.modalIcon.textContent = "✔";
+    els.modalTitle.textContent = "ACESSO CONCEDIDO";
+    els.modalDesc.innerHTML = `Fase concluída com <strong>${phaseScore} pontos</strong>.<br>Você atingiu o mínimo de ${phase.minPoints}.`;
+    els.modalBtn.textContent = "VOLTAR AO MAPA →";
+    els.modalBtn.className = "btn-next";
+    els.modalBtn.onclick = backToMap;
+    launchConfetti();
+  } else {
+    els.modal.className = 'modal fail';
+    els.modalIcon.textContent = "✖";
+    els.modalTitle.textContent = "ACESSO NEGADO";
+    els.modalDesc.innerHTML = `Você fez apenas <strong>${phaseScore} pontos</strong>.<br>O mínimo para esta fase é ${phase.minPoints}. O Saboteador venceu esta rodada.`;
+    els.modalBtn.textContent = "TENTAR NOVAMENTE ↻";
+    els.modalBtn.className = "btn-next btn-retry";
+    els.modalBtn.onclick = retryPhase;
+  }
+}
+
+function backToMap() {
+  els.overlay.classList.remove('active');
+  if (maxUnlockedPhase > gameData.length) {
+    document.getElementById('end-overlay').classList.add('active');
+  } else {
+    showScreen('map');
+  }
+}
+
+function retryPhase() {
+  els.overlay.classList.remove('active');
+  globalScore -= phaseScore; 
+  loadPhase();
+}
+
+/* ==========================================
+   HELPERS
+   ========================================== */
+function updateHUD() {
+  els.scoreDisplay.textContent = `SCORE: ${globalScore}/100`;
+  els.progressBar.style.width = `${globalScore}%`;
+}
+
+function updatePhaseInfo() {
+  const phase = gameData[currentPhaseIndex];
+  els.phaseInfo.textContent = `Fase ${currentPhaseIndex + 1}: ${phaseScore}/${phase.maxPoints} pts | Desafio ${currentChallengeIndex + 1}/${phase.challenges.length}`;
+}
+
+function typeWriter(text, element, callback) {
+  element.innerHTML = '';
+  let i = 0;
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+  element.appendChild(cursor);
+
+  function type() {
+    if (i < text.length) {
+      if (text.charAt(i) === '<') {
+        const tagEnd = text.indexOf('>', i);
+        if (tagEnd !== -1) {
+          element.innerHTML = text.substring(0, tagEnd + 1) + cursor.outerHTML;
+          i = tagEnd + 1;
+          setTimeout(type, 1);
+          return;
+        }
+      }
+      cursor.insertAdjacentText('beforebegin', text.charAt(i));
+      i++;
+      setTimeout(type, 15);
+    } else {
+      cursor.remove();
+      if (callback) callback();
+    }
+  }
+  type();
+}
+
+function launchConfetti() {
+  const colors = ['#00F0FF', '#39FF14', '#FF007F', '#E61A27', '#FFD93D'];
+  for(let i=0; i<40; i++) {
+    const conf = document.createElement('div');
+    conf.style.position = 'fixed';
+    conf.style.width = '8px';
+    conf.style.height = '8px';
+    conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.left = Math.random() * 100 + 'vw';
+    conf.style.top = '-10px';
+    conf.style.zIndex = '2000';
+    conf.style.borderRadius = '50%';
+    conf.style.transition = `all ${1 + Math.random() * 2}s ease-in`;
+    document.body.appendChild(conf);
+    
+    setTimeout(() => {
+      conf.style.top = '100vh';
+      conf.style.transform = `rotate(${Math.random() * 720}deg)`;
+    }, 10);
+    
+    setTimeout(() => conf.remove(), 3000);
+  }
+}
+</script>
+</body>
+</html>
